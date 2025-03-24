@@ -2,6 +2,5 @@ requests
 aiohttp
 asyncio
 pycurl
-ThreadPoolExecutor
 BytesIO
 random
