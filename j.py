@@ -41,7 +41,7 @@ def send_requests(target):
         except Exception as e:
             print(Fore.RED + f"Error: {e}" + Style.RESET_ALL)
 
-def start_attack(target, num_threads=50):
+def start_attack(target, num_threads=90):
     """بدء الهجوم باستخدام عدد من الخيوط."""
     global stop_attack_flag
     stop_attack_flag = False
