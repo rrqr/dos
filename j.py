@@ -51,8 +51,7 @@ def start_attack(target, num_threads=50):
         thread.start()
 
 # إعداد telebot
-bot = telebot.TeleBot("7248287448:AAFQcPnXrEaNaIFM-Lx_3VizIiv_9glWXCA
-")
+bot = telebot.TeleBot("7248287448:AAFQcPnXrEaNaIFM-Lx_3VizIiv_9glWXCA")
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
