@@ -1,3 +1,4 @@
+import os
 import requests
 import telebot
 
@@ -55,13 +56,17 @@ def handle_allD_command(message):
             'X-API-Key': API_KEY
         }
 
-        response = requests.get(f'https://leakcheck.io/api/v2/query/{query}', headers=headers)
+        try:
+            response = requests.get(f'https://leakcheck.io/api/v2/query/{query}', headers=headers)
+        except Exception as e:
+            bot.reply_to(message, f"Connection error: {e}")
+            return
 
         if response.status_code == 200:
             try:
                 data = response.json()
-                if data.get('success') and data['found'] > 0:
-                    reply_message = f"🔍 Search results for: {query}\n\n"
+                if data.get('success') and data.get('found', 0) > 0:
+                    reply_message = f"🔍 Search results for: {query}\nTotal found: {data['found']}\n\n"
 
                     for result in data['result']:
                         source = result.get('source', {})
@@ -85,30 +90,36 @@ def handle_allD_command(message):
                             f"📦 Zip Code: {result.get('zip', 'N/A')}\n"
                             f"📞 Phone: {result.get('phone', 'N/A')}\n"
                             f"📝 Name: {result.get('name', 'N/A')}\n"
-                            f"instagram - pqqqf"
                             "-----------------------------------\n\n"
                         )
 
                         reply_message += result_message
 
-                    bot.reply_to(message, reply_message)
+                    # كتابة النتائج إلى ملف
+                    filename = f"{query}_results.txt"
+                    with open(filename, "w", encoding="utf-8") as f:
+                        f.write(reply_message)
+
+                    # إرسال الملف للمستخدم
+                    with open(filename, "rb") as f:
+                        bot.send_document(message.chat.id, f)
+
+                    # حذف الملف بعد الإرسال
+                    os.remove(filename)
+
                 else:
                     bot.reply_to(message, "No results found for this search.")
-            except ValueError:
-                bot.reply_to(message, "Received a non-JSON response.")
+            except Exception as e:
+                bot.reply_to(message, f"Error processing data: {str(e)}")
         else:
-            if response.status_code == 401:
-                bot.reply_to(message, "Missing or invalid X-API-Key. Please check your API key.")
-            elif response.status_code == 400:
-                bot.reply_to(message, "Invalid request. Please check the query format and try again.")
-            elif response.status_code == 403:
-                bot.reply_to(message, "Access denied. Active plan required or limit reached.")
-            elif response.status_code == 429:
-                bot.reply_to(message, "Too many requests. Please try again later.")
-            elif response.status_code == 422:
-                bot.reply_to(message, "Could not determine search type automatically. Please specify the type.")
-            else:
-                bot.reply_to(message, f"Failed to connect to LeakCheck. Status code: {response.status_code}")
+            status_messages = {
+                401: "Missing or invalid API key.",
+                400: "Invalid request format.",
+                403: "Access denied – check your subscription.",
+                429: "Too many requests – slow down.",
+                422: "Search type could not be determined.",
+            }
+            bot.reply_to(message, status_messages.get(response.status_code, f"Failed to connect. Status code: {response.status_code}"))
     else:
         bot.reply_to(message, "You are not authorized to perform this action.")
 
