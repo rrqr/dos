@@ -1,54 +1,56 @@
-import os
 import requests
 import telebot
 
-# Bot access token
-TOKEN = '7333263562:AAE7SGKtGMwlbkxNroPyh3MBvY8EUc2PCmU'
+# توكن البوت
+TOKEN = '7458138039:AAFSX74H91fXoRgwfqzOzp_qu9QO6vVXFmU'
 bot = telebot.TeleBot(TOKEN)
 
-# LeakCheck API key
-API_KEY = '370349b14a81c9a1fbf97ec4d41e1dc5a5ea8d58'
+# مفتاح API الخاص بـ LeakCheck
+API_KEY = '858c246c89cc9914baa97d3dc2c21a6cd03e6222'
 
-# List of authorized user IDs
+# قائمة المستخدمين المصرح لهم
 authorized_users = set()
 
-# Owner ID
-OWNER_ID = 6358035274
+# معرفات المالكين
+OWNERS = {6358035274, 7672037992}
 
+# أمر لإضافة مستخدم
 @bot.message_handler(commands=['add_user'])
 def add_user(message):
-    if message.from_user.id == OWNER_ID:
+    if message.from_user.id in OWNERS:
         try:
             parts = message.text.split()
             user_id = int(parts[1])
             authorized_users.add(user_id)
-            bot.reply_to(message, f"User {user_id} added successfully.")
+            bot.reply_to(message, f"✅ تم إضافة المستخدم {user_id} بنجاح.")
         except (IndexError, ValueError):
-            bot.reply_to(message, "Please provide a valid user ID to add.")
+            bot.reply_to(message, "❌ الرجاء إدخال معرف مستخدم صحيح بعد الأمر.")
     else:
-        bot.reply_to(message, "You are not authorized to add users.")
+        bot.reply_to(message, "🚫 ليس لديك صلاحية لإضافة مستخدمين.")
 
+# أمر لإزالة مستخدم
 @bot.message_handler(commands=['remove_user'])
 def remove_user(message):
-    if message.from_user.id == OWNER_ID:
+    if message.from_user.id in OWNERS:
         try:
             parts = message.text.split()
             user_id = int(parts[1])
             authorized_users.discard(user_id)
-            bot.reply_to(message, f"User {user_id} removed successfully.")
+            bot.reply_to(message, f"✅ تم إزالة المستخدم {user_id} بنجاح.")
         except (IndexError, ValueError):
-            bot.reply_to(message, "Please provide a valid user ID to remove.")
+            bot.reply_to(message, "❌ الرجاء إدخال معرف مستخدم صحيح بعد الأمر.")
     else:
-        bot.reply_to(message, "You are not authorized to remove users.")
+        bot.reply_to(message, "🚫 ليس لديك صلاحية لإزالة مستخدمين.")
 
+# أمر للتحقق من البيانات المسربة
 @bot.message_handler(commands=['Jid'])
-def handle_allD_command(message):
-    if message.from_user.id in authorized_users or message.from_user.id == OWNER_ID:
+def handle_leakcheck_query(message):
+    if message.from_user.id in authorized_users or message.from_user.id in OWNERS:
         try:
             parts = message.text.split()
             query = parts[1]
         except IndexError:
-            bot.reply_to(message, "Please enter the email or username after the command.")
+            bot.reply_to(message, "❗ الرجاء إدخال البريد الإلكتروني أو اسم المستخدم بعد الأمر.")
             return
 
         headers = {
@@ -56,72 +58,59 @@ def handle_allD_command(message):
             'X-API-Key': API_KEY
         }
 
-        try:
-            response = requests.get(f'https://leakcheck.io/api/v2/query/{query}', headers=headers)
-        except Exception as e:
-            bot.reply_to(message, f"Connection error: {e}")
-            return
+        response = requests.get(f'https://leakcheck.io/api/v2/query/{query}', headers=headers)
 
         if response.status_code == 200:
             try:
                 data = response.json()
-                if data.get('success') and data.get('found', 0) > 0:
-                    reply_message = f"🔍 Search results for: {query}\nTotal found: {data['found']}\n\n"
-
+                if data.get('success') and data['found'] > 0:
+                    reply_message = f"🔍 نتائج البحث عن: {query}\n\n"
                     for result in data['result']:
                         source = result.get('source', {})
-                        source_name = source.get('name', 'Unknown')
-                        breach_date = source.get('breach_date', 'None')
-                        ip_address = result.get('ip', 'N/A')
-                        origin = result.get('origin', 'N/A')
+                        source_name = source.get('name', 'غير معروف')
+                        breach_date = source.get('breach_date', 'غير محدد')
+                        ip_address = result.get('ip', 'غير متوفر')
+                        origin = result.get('origin', 'غير معروف')
 
                         result_message = (
-                            f"📛 Source: {source_name}\n"
-                            f"📅 Breach Date: {breach_date}\n"
-                            f"🌐 IP Address: {ip_address}\n"
-                            f"🌐 Leak Location: {origin}\n"
-                            f"📧 Email: {result.get('email', 'N/A')}\n"
-                            f"👤 Username: {result.get('username', 'N/A')}\n"
-                            f"🔑 Password: {result.get('password', 'N/A')}\n"
-                            f"👥 First Name: {result.get('first_name', 'N/A')}\n"
-                            f"👥 Last Name: {result.get('last_name', 'N/A')}\n"
-                            f"🎂 Date of Birth: {result.get('dob', 'N/A')}\n"
-                            f"🏠 Address: {result.get('address', 'N/A')}\n"
-                            f"📦 Zip Code: {result.get('zip', 'N/A')}\n"
-                            f"📞 Phone: {result.get('phone', 'N/A')}\n"
-                            f"📝 Name: {result.get('name', 'N/A')}\n"
+                            f"📛 المصدر: {source_name}\n"
+                            f"📅 تاريخ التسريب: {breach_date}\n"
+                            f"🌐 عنوان IP: {ip_address}\n"
+                            f"🌐 موقع التسريب: {origin}\n"
+                            f"📧 بريد إلكتروني: {result.get('email', 'غير متوفر')}\n"
+                            f"👤 اسم المستخدم: {result.get('username', 'غير متوفر')}\n"
+                            f"🔑 كلمة المرور: {result.get('password', 'غير متوفر')}\n"
+                            f"👥 الاسم الأول: {result.get('first_name', 'غير متوفر')}\n"
+                            f"👥 الاسم الأخير: {result.get('last_name', 'غير متوفر')}\n"
+                            f"🎂 تاريخ الميلاد: {result.get('dob', 'غير متوفر')}\n"
+                            f"🏠 العنوان: {result.get('address', 'غير متوفر')}\n"
+                            f"📦 الرمز البريدي: {result.get('zip', 'غير متوفر')}\n"
+                            f"📞 الهاتف: {result.get('phone', 'غير متوفر')}\n"
+                            f"📝 الاسم الكامل: {result.get('name', 'غير متوفر')}\n"
                             "-----------------------------------\n\n"
                         )
-
                         reply_message += result_message
 
-                    # كتابة النتائج إلى ملف
-                    filename = f"{query}_results.txt"
-                    with open(filename, "w", encoding="utf-8") as f:
-                        f.write(reply_message)
-
-                    # إرسال الملف للمستخدم
-                    with open(filename, "rb") as f:
-                        bot.send_document(message.chat.id, f)
-
-                    # حذف الملف بعد الإرسال
-                    os.remove(filename)
-
+                    bot.reply_to(message, reply_message)
                 else:
-                    bot.reply_to(message, "No results found for this search.")
-            except Exception as e:
-                bot.reply_to(message, f"Error processing data: {str(e)}")
+                    bot.reply_to(message, "❌ لا توجد نتائج لهذا البحث.")
+            except ValueError:
+                bot.reply_to(message, "⚠️ لم يتم استلام رد بصيغة JSON.")
         else:
-            status_messages = {
-                401: "Missing or invalid API key.",
-                400: "Invalid request format.",
-                403: "Access denied – check your subscription.",
-                429: "Too many requests – slow down.",
-                422: "Search type could not be determined.",
-            }
-            bot.reply_to(message, status_messages.get(response.status_code, f"Failed to connect. Status code: {response.status_code}"))
+            if response.status_code == 401:
+                bot.reply_to(message, "❌ مفتاح API مفقود أو غير صالح.")
+            elif response.status_code == 400:
+                bot.reply_to(message, "❌ طلب غير صالح. تحقق من صيغة الاستعلام.")
+            elif response.status_code == 403:
+                bot.reply_to(message, "🚫 تم رفض الوصول. ربما تحتاج إلى خطة مفعّلة.")
+            elif response.status_code == 429:
+                bot.reply_to(message, "⚠️ تم إرسال الكثير من الطلبات. حاول لاحقاً.")
+            elif response.status_code == 422:
+                bot.reply_to(message, "❗ لم يتم تحديد نوع البحث تلقائياً. الرجاء تحديده.")
+            else:
+                bot.reply_to(message, f"❌ فشل الاتصال بـ LeakCheck. رمز الحالة: {response.status_code}")
     else:
-        bot.reply_to(message, "You are not authorized to perform this action.")
+        bot.reply_to(message, "🚫 ليس لديك صلاحية لاستخدام هذا الأمر.")
 
-# Start the bot
+# تشغيل البوت
 bot.polling()
